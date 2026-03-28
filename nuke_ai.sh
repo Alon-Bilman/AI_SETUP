@@ -153,6 +153,9 @@ else
     print_step "Claude Code not found — skipping."
 fi
 
+# Remove Claude binary from ~/.local/bin if still present
+safe_rm "$HOME/.local/bin/claude"
+
 # Remove Claude config files
 print_step "Removing Claude Code configs..."
 safe_rm "$HOME/.claude.json"
@@ -258,6 +261,12 @@ for rcfile in "$HOME/.zshrc" "$HOME/.bashrc"; do
             print_success "ai-init removed from $rcfile"
         else
             print_step "No ai-init block found in $rcfile"
+        fi
+        # Remove the ~/.local/bin PATH export added by orchestrate_ai.sh
+        if grep -qF 'export PATH="$HOME/.local/bin:$PATH"' "$rcfile"; then
+            print_step "Removing ~/.local/bin PATH export from $rcfile..."
+            sed -i '' '/export PATH="\$HOME\/.local\/bin:\$PATH"/d' "$rcfile"
+            print_success "PATH export removed from $rcfile"
         fi
     else
         print_step "$rcfile does not exist — skipping."

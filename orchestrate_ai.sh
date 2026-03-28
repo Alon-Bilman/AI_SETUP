@@ -170,6 +170,14 @@ print_step "Checking Claude Code..."
 if ! command -v claude &>/dev/null; then
     print_step "Installing Claude Code..."
     retry bash -c "curl -fsSL https://claude.ai/install.sh | bash"
+    # Ensure ~/.local/bin is in PATH (required for claude login to work)
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    if ! grep -qF 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" 2>/dev/null; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+        print_success "Added ~/.local/bin to PATH in ~/.zshrc"
+    fi
     print_success "Claude Code installed."
 else
     print_success "Claude Code already installed."
@@ -356,7 +364,7 @@ ai-init() {
 
     # ── Project name ──
     local project_name
-    read -r -p "  Project name: " project_name
+    printf "  Project name: "; read -r project_name
     if [ -z "$project_name" ]; then
         echo -e "  ${RED}✘ Project name cannot be empty.${RESET}"
         return 1
@@ -377,7 +385,7 @@ ai-init() {
 
     local mode
     while true; do
-        read -r -p "  Choice [1/2/3]: " mode
+        printf "  Choice [1/2/3]: "; read -r mode
         case "$mode" in
             1|2|3) break ;;
             *) echo -e "  ${RED}Invalid choice. Enter 1, 2, or 3.${RESET}" ;;
@@ -590,7 +598,7 @@ Conventional commits, branching strategy, and PR workflow for backend/infrastruc
   }
 }
 MCPEOF
-        print_success "Claude Code project scaffolded."
+        echo -e "  ${GREEN}✔${RESET} Claude Code project scaffolded."
 
     # ════════════════════════════════════════════════════════════
     #  OPTION 2: CURSOR — UI-First Tactician (IDE Copilot)
@@ -772,7 +780,7 @@ Conventional commits and workflow for frontend/UI projects.
   }
 }
 MCPEOF
-        print_success "Cursor project scaffolded."
+        echo -e "  ${GREEN}✔${RESET} Cursor project scaffolded."
 
     # ════════════════════════════════════════════════════════════
     #  OPTION 3: VS CODE — Copilot Full-Stack Assistant
@@ -966,7 +974,7 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
   }
 }
 MCPEOF
-        print_success "VS Code (Copilot) project scaffolded."
+        echo -e "  ${GREEN}✔${RESET} VS Code (Copilot) project scaffolded."
     fi
 
     echo ""
