@@ -63,19 +63,20 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 
 ```
 <project>/
-├── .cursorrules                       ← Main rules
+├── .cursorrules                       ← Short index (points to rules/ + skills/)
 ├── .cursor/
 │   ├── rules/
-│   │   ├── ui-component-style.md          ← Frontend/UI style
-│   │   ├── frontend-testing.md            ← Frontend testing rules
-│   │   └── visual-pr-workflow.md          ← Git workflow rules
+│   │   ├── project-core.mdc               ← Core principles (alwaysApply: true)
+│   │   ├── ui-component-style.mdc         ← Frontend/UI style (globs: **/*.{ts,tsx})
+│   │   ├── frontend-testing.mdc           ← Frontend testing (globs: **/*.{test,spec}.{ts,tsx})
+│   │   └── git-workflow.md                ← Git/PR conventions (plain markdown)
 │   ├── skills/
 │   │   ├── react-components/SKILL.md
 │   │   ├── tailwind-patterns/SKILL.md
 │   │   ├── accessibility/SKILL.md
 │   │   ├── state-management/SKILL.md
 │   │   └── git-conventions/SKILL.md
-│   └── mcp.json                       ← Project MCP (mcpServers)
+│   └── mcp.json                       ← Project MCP (mcpServers, type: stdio, ${workspaceFolder})
 ```
 
 ### Option 3: VS Code (Copilot)
@@ -83,12 +84,11 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 ```
 <project>/
 ├── .github/
-│   └── copilot-instructions.md        ← Main rules
-├── .copilot/
-│   ├── rules/
-│   │   ├── fullstack-typescript-style.md  ← Full-stack TS style
-│   │   ├── fullstack-testing.md           ← Full-stack testing rules
-│   │   └── monorepo-pr-workflow.md        ← Git workflow rules
+│   ├── copilot-instructions.md            ← Main instructions (always-on)
+│   ├── instructions/
+│   │   ├── fullstack-typescript-style.instructions.md  ← TS style (applyTo: **/*.{ts,tsx})
+│   │   ├── fullstack-testing.instructions.md           ← Testing (applyTo: **/*.{test,spec}.{ts,tsx})
+│   │   └── monorepo-pr-workflow.instructions.md        ← Git workflow (applyTo: **)
 │   └── skills/
 │       ├── typescript-strict/SKILL.md
 │       ├── esm-modules/SKILL.md
@@ -96,7 +96,7 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 │       ├── error-handling/SKILL.md
 │       └── git-conventions/SKILL.md
 ├── .vscode/
-│   └── mcp.json                       ← Project MCP (servers)
+│   └── mcp.json                       ← Project MCP (servers, type: stdio, ${workspaceFolder})
 ```
 
 ---
@@ -120,10 +120,10 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 
 | Rule File | Claude Code | Cursor | VS Code |
 |-----------|------------|--------|---------|
-| **Main rules** | `CLAUDE.md` — Autonomous architect, CLI-first, architecture ownership, ADRs | `.cursorrules` — UI-first copilot, Tailwind, React, accessibility | `.github/copilot-instructions.md` — Full-stack assistant, shared types, typed API clients |
-| **code style** | `backend-architecture-style.md` — kebab-case files, async/await, pure functions, config module | `ui-component-style.md` — PascalCase components, Tailwind class grouping, arrow functions | `fullstack-typescript-style.md` — split naming (backend kebab / frontend Pascal), workspace packages |
-| **testing** | `backend-testing.md` — unit + integration + load tests, 100% on auth/payments | `frontend-testing.md` — testing-library, MSW mocks, visual regression, responsive breakpoints | `fullstack-testing.md` — both sides + E2E spanning frontend → API → DB |
-| **git workflow** | `commit-and-migration-workflow.md` — migration steps in PRs | `visual-pr-workflow.md` — before/after screenshots for visual changes | `monorepo-pr-workflow.md` — cross-package impact for multi-package PRs |
+| **Main rules** | `CLAUDE.md` — Autonomous architect, CLI-first, architecture ownership, ADRs | `.cursorrules` (index) + `project-core.mdc` (alwaysApply) — UI-first copilot, Tailwind, React, accessibility | `.github/copilot-instructions.md` — Full-stack assistant, shared types, typed API clients |
+| **code style** | `backend-architecture-style.md` — kebab-case files, async/await, pure functions, config module | `ui-component-style.mdc` (globs: TS/TSX) — PascalCase components, Tailwind class grouping | `fullstack-typescript-style.instructions.md` (applyTo: TS/TSX) — split naming, workspace packages |
+| **testing** | `backend-testing.md` — unit + integration + load tests, 100% on auth/payments | `frontend-testing.mdc` (globs: test files) — testing-library, MSW mocks, visual regression | `fullstack-testing.instructions.md` (applyTo: test files) — both sides + E2E |
+| **git workflow** | `commit-and-migration-workflow.md` — migration steps in PRs | `git-workflow.md` — before/after screenshots for visual changes | `monorepo-pr-workflow.instructions.md` (applyTo: **) — cross-package impact |
 
 ---
 

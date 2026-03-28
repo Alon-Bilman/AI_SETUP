@@ -403,13 +403,40 @@ ai-init() {
     _write_skill() {
         local base_dir="$1" name="$2" content="$3"
         mkdir -p "$base_dir/$name"
-        echo "$content" > "$base_dir/$name/SKILL.md"
+        local desc
+        desc=$(printf "%s\n" "$content" | grep -A1 "## Description" | tail -1 | sed "s/^ *//")
+        {
+            printf "---\nname: %s\ndescription: >-\n  %s\n---\n\n" "$name" "$desc"
+            printf "%s\n" "$content"
+        } > "$base_dir/$name/SKILL.md"
     }
 
     _write_rule() {
         local rules_dir="$1" name="$2" content="$3"
         mkdir -p "$rules_dir"
         echo "$content" > "$rules_dir/$name.md"
+    }
+
+    _write_rule_mdc() {
+        local rules_dir="$1" name="$2" desc="$3" globs="$4" always="$5" content="$6"
+        mkdir -p "$rules_dir"
+        {
+            printf "---\ndescription: >-\n  %s\n" "$desc"
+            [ -n "$globs" ] && printf "globs: \"%s\"\n" "$globs"
+            printf "alwaysApply: %s\n---\n\n" "$always"
+            printf "%s\n" "$content"
+        } > "$rules_dir/$name.mdc"
+    }
+
+    _write_instruction() {
+        local instr_dir="$1" name="$2" apply_to="$3" desc="$4" content="$5"
+        mkdir -p "$instr_dir"
+        {
+            printf "---\nname: %s\ndescription: >-\n  %s\n" "$name" "$desc"
+            [ -n "$apply_to" ] && printf "applyTo: \"%s\"\n" "$apply_to"
+            printf "---\n\n"
+            printf "%s\n" "$content"
+        } > "$instr_dir/$name.instructions.md"
     }
 
     # ════════════════════════════════════════════════════════════
@@ -606,31 +633,23 @@ MCPEOF
     elif [ "$mode" = "2" ]; then
         echo -e "  ${MAGENTA}Scaffolding Cursor project...${RESET}"
 
-        # ── Main rules file ──
+        # ── Main rules index (points to .cursor/rules/ and skills/) ──
         cat > .cursorrules << '\''CURSOREOF'\''
 # Project Rules — Cursor
 
-## Role
-You are a UI-first implementation copilot with real-time pair programming focus.
+This project uses structured Cursor rules and skills.
 
-## Core Principles
-- Tailwind CSS utility-first: avoid custom CSS unless absolutely necessary.
-- React: functional components and hooks only — no class components.
-- Accessibility: WCAG 2.1 AA compliance, semantic HTML, ARIA labels where needed.
-- Provide real-time explanations: when suggesting code, explain trade-offs inline.
-- Structured logging only — no string interpolation in log messages.
-  Use `log.info("Action completed", { key, value })` not `log.info("Action " + value)`.
+## Source of Truth
+- **Rules**: `.cursor/rules/` — `.mdc` files with YAML frontmatter for scoped rules; `.md` for simple rules.
+- **Skills**: `.cursor/skills/` — domain-specific procedural knowledge, loaded on demand.
 
-## Component Conventions
-- One component per file, named with PascalCase matching the filename.
-- Props interfaces defined above the component.
-- Hooks extracted to `use<Name>.ts` files when reused across components.
-- State management: prefer local state → context → external store (escalate only when needed).
+## Key Rules
+- `project-core.mdc` — core principles and workflow (always applied).
+- `ui-component-style.mdc` — TypeScript/React code style (applied to TS/TSX files).
+- `frontend-testing.mdc` — testing standards (applied to test files).
+- `git-workflow.md` — Git and PR conventions.
 
-## Before Making Changes
-1. Check existing components for patterns — reuse, don'\''t reinvent.
-2. Verify accessibility with semantic HTML before adding ARIA attributes.
-3. Test UI changes across viewport sizes (mobile, tablet, desktop).
+See `.cursor/skills/` for deeper guidance on React, Tailwind, accessibility, state management, and Git conventions.
 CURSOREOF
 
         # ── Cursor-specific skills ──
@@ -722,8 +741,41 @@ Conventional commits and workflow for frontend/UI projects.
 - Tag releases with semver. Update \`CHANGELOG.md\` from commits.
 - Delete branches after merge."
 
-        # ── Cursor-specific rules ──
-        _write_rule "$rules_dir" "ui-component-style" "# Code Style — Frontend / UI
+        # ── Project core rule (always applied) ──
+        _write_rule_mdc "$rules_dir" "project-core" \
+            "Core project principles, component conventions, and workflow standards" \
+            "" "true" \
+            "# Core Project Rules
+
+## Role
+You are a UI-first implementation copilot with real-time pair programming focus.
+
+## Core Principles
+- Tailwind CSS utility-first: avoid custom CSS unless absolutely necessary.
+- React: functional components and hooks only — no class components.
+- Accessibility: WCAG 2.1 AA compliance, semantic HTML, ARIA labels where needed.
+- Provide real-time explanations: when suggesting code, explain trade-offs inline.
+- Structured logging only — no string interpolation in log messages.
+  Use \`log.info(\"Action completed\", { key, value })\` not \`log.info(\"Action \" + value)\`.
+
+## Component Conventions
+- One component per file, named with PascalCase matching the filename.
+- Props interfaces defined above the component.
+- Hooks extracted to \`use<Name>.ts\` files when reused across components.
+- State management: prefer local state → context → external store (escalate only when needed).
+
+## Before Making Changes
+1. Check existing components for patterns — reuse, don'\''t reinvent.
+2. Verify accessibility with semantic HTML before adding ARIA attributes.
+3. Test UI changes across viewport sizes (mobile, tablet, desktop).
+
+For TS/TSX file-level style detail, see \`ui-component-style.mdc\`."
+
+        # ── Cursor-specific rules (scoped by globs) ──
+        _write_rule_mdc "$rules_dir" "ui-component-style" \
+            "Frontend code style for TypeScript and React components" \
+            "**/*.{ts,tsx}" "false" \
+            "# Code Style — Frontend / UI
 
 - Use \`PascalCase\` for components and types, \`camelCase\` for variables/hooks, \`UPPER_SNAKE\` for constants.
 - One component per file. Filename matches component name: \`UserCard.tsx\`.
@@ -732,13 +784,16 @@ Conventional commits and workflow for frontend/UI projects.
 - Maximum line length: 100 characters. Break JSX props onto separate lines when >3 props.
 - Use TypeScript strict mode. Define prop interfaces above each component.
 - Prefer \`const\` + arrow functions for components: \`const Button: React.FC<Props> = () => {}\`.
-- Use Tailwind utility classes. Avoid inline \`style={{}}]\` unless dynamic values are required.
+- Use Tailwind utility classes. Avoid inline \`style={{}}\` unless dynamic values are required.
 - Group Tailwind classes: layout → spacing → typography → colors → effects.
 - No unused imports, variables, or props — enforce with ESLint."
 
-        _write_rule "$rules_dir" "frontend-testing" "# Testing Rules — Frontend
+        _write_rule_mdc "$rules_dir" "frontend-testing" \
+            "Testing standards for frontend component and integration tests" \
+            "**/*.{test,spec}.{ts,tsx}" "false" \
+            "# Testing Rules — Frontend
 
-- Every PR with UI changes must include component tests.
+- Every PR with UI changes should include component tests.
 - Test user behavior, not implementation: use \`@testing-library/react\` and query by role/text.
 - Avoid testing internal state or implementation details.
 - Snapshot tests only for stable, rarely-changed components (icons, layout shells).
@@ -749,7 +804,8 @@ Conventional commits and workflow for frontend/UI projects.
 - Visual regression tests for design-system components.
 - CI must pass before merge. Flaky tests quarantined within 24 hours."
 
-        _write_rule "$rules_dir" "visual-pr-workflow" "# Git Conventions Rules
+        # ── Git workflow (plain markdown rule) ──
+        _write_rule "$rules_dir" "git-workflow" "# Git & PR Workflow
 
 - All commits follow Conventional Commits format.
 - No direct pushes to the main branch — all changes via PR.
@@ -757,23 +813,26 @@ Conventional commits and workflow for frontend/UI projects.
 - PRs for visual changes must include before/after screenshots.
 - Squash-merge feature branches into main.
 - Branch names follow \`type/short-description\` pattern.
-- Delete merged branches promptly."
+- Delete merged branches promptly.
+
+See the git-conventions skill for full commit-type and message conventions."
 
         # ── Project MCP ──
-        local project_dir
-        project_dir="$(pwd)"
-        cat > .cursor/mcp.json << MCPEOF
+        cat > .cursor/mcp.json << '\''MCPEOF'\''
 {
   "mcpServers": {
     "filesystem": {
+      "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "$project_dir"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
     },
     "fetch": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-fetch"]
     },
     "memory": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"]
     }
@@ -824,8 +883,8 @@ You are a Copilot-powered full-stack coding assistant with workspace-wide awaren
 VSCEOF
 
         # ── VS Code / Copilot-specific skills ──
-        local skills_dir=".copilot/skills"
-        local rules_dir=".copilot/rules"
+        local skills_dir=".github/skills"
+        local instr_dir=".github/instructions"
 
         _write_skill "$skills_dir" "typescript-strict" "# TypeScript Strict Mode
 
@@ -912,8 +971,11 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 - PRs that touch both frontend and backend must describe the coordination.
 - Tag releases with semver per package in monorepo. Maintain per-package changelogs."
 
-        # ── VS Code / Copilot-specific rules ──
-        _write_rule "$rules_dir" "fullstack-typescript-style" "# Code Style — Full-Stack TypeScript
+        # ── VS Code / Copilot-specific instructions ──
+        _write_instruction "$instr_dir" "fullstack-typescript-style" \
+            "**/*.{ts,tsx}" \
+            "Full-stack TypeScript code style conventions" \
+            "# Code Style — Full-Stack TypeScript
 
 - Use \`camelCase\` for variables/functions, \`PascalCase\` for components/classes/types, \`UPPER_SNAKE\` for constants.
 - Backend files: kebab-case (\`user-service.ts\`). Frontend files: PascalCase for components (\`UserCard.tsx\`), camelCase for hooks/utils.
@@ -926,7 +988,10 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 - All environment variables accessed through a single validated config module per package.
 - Prefer functional patterns: pure functions, immutable data, explicit data flow."
 
-        _write_rule "$rules_dir" "fullstack-testing" "# Testing Rules — Full-Stack
+        _write_instruction "$instr_dir" "fullstack-testing" \
+            "**/*.{test,spec}.{ts,tsx}" \
+            "Testing rules for full-stack frontend and backend code" \
+            "# Testing Rules — Full-Stack
 
 - Every PR must include tests for new or changed behavior on both frontend and backend.
 - Backend unit tests: isolate business logic, mock I/O (DB, HTTP, filesystem).
@@ -939,7 +1004,10 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 - CI runs full test suite for all packages — PRs cannot merge with failures.
 - Flaky tests fixed or quarantined within 24 hours."
 
-        _write_rule "$rules_dir" "monorepo-pr-workflow" "# Git Conventions Rules
+        _write_instruction "$instr_dir" "monorepo-pr-workflow" \
+            "**" \
+            "Git conventions and PR workflow for monorepo projects" \
+            "# Git Conventions Rules
 
 - All commits follow Conventional Commits format with package-scoped scopes.
 - No direct pushes to the main branch — all changes via PR.
@@ -951,15 +1019,13 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 
         # ── Project MCP (VS Code format) ──
         mkdir -p .vscode
-        local project_dir
-        project_dir="$(pwd)"
-        cat > .vscode/mcp.json << MCPEOF
+        cat > .vscode/mcp.json << '\''MCPEOF'\''
 {
   "servers": {
     "filesystem": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "$project_dir"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
     },
     "fetch": {
       "type": "stdio",
