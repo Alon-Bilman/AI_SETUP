@@ -542,7 +542,7 @@ Conventional commits, branching strategy, and PR workflow for backend/infrastruc
 - Delete branches after merge."
 
         # ── Claude-specific rules ──
-        _write_rule "$rules_dir" "code-style" "# Code Style — Backend / Architecture
+        _write_rule "$rules_dir" "backend-architecture-style" "# Code Style — Backend / Architecture
 
 - Use \`camelCase\` for variables/functions, \`PascalCase\` for classes, \`UPPER_SNAKE\` for constants.
 - One module per file. Name files after their primary export in kebab-case.
@@ -555,7 +555,7 @@ Conventional commits, branching strategy, and PR workflow for backend/infrastruc
 - Prefer pure functions and immutable data. Avoid side effects in business logic.
 - All environment variables accessed through a single validated config module."
 
-        _write_rule "$rules_dir" "testing" "# Testing Rules — Backend
+        _write_rule "$rules_dir" "backend-testing" "# Testing Rules — Backend
 
 - Every PR must include tests for new or changed behavior.
 - Minimum 80% line coverage on new code; 100% on critical paths (auth, payments, data mutations).
@@ -567,7 +567,7 @@ Conventional commits, branching strategy, and PR workflow for backend/infrastruc
 - Load tests for critical endpoints before major releases.
 - Flaky tests must be fixed or quarantined within 24 hours."
 
-        _write_rule "$rules_dir" "git-conventions" "# Git Conventions Rules
+        _write_rule "$rules_dir" "commit-and-migration-workflow" "# Git Conventions Rules
 
 - All commits follow Conventional Commits format.
 - No direct pushes to the main branch — all changes via PR.
@@ -723,7 +723,7 @@ Conventional commits and workflow for frontend/UI projects.
 - Delete branches after merge."
 
         # ── Cursor-specific rules ──
-        _write_rule "$rules_dir" "code-style" "# Code Style — Frontend / UI
+        _write_rule "$rules_dir" "ui-component-style" "# Code Style — Frontend / UI
 
 - Use \`PascalCase\` for components and types, \`camelCase\` for variables/hooks, \`UPPER_SNAKE\` for constants.
 - One component per file. Filename matches component name: \`UserCard.tsx\`.
@@ -736,7 +736,7 @@ Conventional commits and workflow for frontend/UI projects.
 - Group Tailwind classes: layout → spacing → typography → colors → effects.
 - No unused imports, variables, or props — enforce with ESLint."
 
-        _write_rule "$rules_dir" "testing" "# Testing Rules — Frontend
+        _write_rule "$rules_dir" "frontend-testing" "# Testing Rules — Frontend
 
 - Every PR with UI changes must include component tests.
 - Test user behavior, not implementation: use \`@testing-library/react\` and query by role/text.
@@ -749,7 +749,7 @@ Conventional commits and workflow for frontend/UI projects.
 - Visual regression tests for design-system components.
 - CI must pass before merge. Flaky tests quarantined within 24 hours."
 
-        _write_rule "$rules_dir" "git-conventions" "# Git Conventions Rules
+        _write_rule "$rules_dir" "visual-pr-workflow" "# Git Conventions Rules
 
 - All commits follow Conventional Commits format.
 - No direct pushes to the main branch — all changes via PR.
@@ -913,7 +913,7 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 - Tag releases with semver per package in monorepo. Maintain per-package changelogs."
 
         # ── VS Code / Copilot-specific rules ──
-        _write_rule "$rules_dir" "code-style" "# Code Style — Full-Stack TypeScript
+        _write_rule "$rules_dir" "fullstack-typescript-style" "# Code Style — Full-Stack TypeScript
 
 - Use \`camelCase\` for variables/functions, \`PascalCase\` for components/classes/types, \`UPPER_SNAKE\` for constants.
 - Backend files: kebab-case (\`user-service.ts\`). Frontend files: PascalCase for components (\`UserCard.tsx\`), camelCase for hooks/utils.
@@ -926,7 +926,7 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 - All environment variables accessed through a single validated config module per package.
 - Prefer functional patterns: pure functions, immutable data, explicit data flow."
 
-        _write_rule "$rules_dir" "testing" "# Testing Rules — Full-Stack
+        _write_rule "$rules_dir" "fullstack-testing" "# Testing Rules — Full-Stack
 
 - Every PR must include tests for new or changed behavior on both frontend and backend.
 - Backend unit tests: isolate business logic, mock I/O (DB, HTTP, filesystem).
@@ -939,7 +939,7 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 - CI runs full test suite for all packages — PRs cannot merge with failures.
 - Flaky tests fixed or quarantined within 24 hours."
 
-        _write_rule "$rules_dir" "git-conventions" "# Git Conventions Rules
+        _write_rule "$rules_dir" "monorepo-pr-workflow" "# Git Conventions Rules
 
 - All commits follow Conventional Commits format with package-scoped scopes.
 - No direct pushes to the main branch — all changes via PR.

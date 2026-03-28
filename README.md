@@ -47,9 +47,9 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 ├── CLAUDE.md                          ← Main rules
 ├── .claude/
 │   ├── rules/
-│   │   ├── code-style.md             ← Backend/architecture style
-│   │   ├── testing.md                ← Backend testing rules
-│   │   └── git-conventions.md        ← Git workflow rules
+│   │   ├── backend-architecture-style.md  ← Backend/architecture style
+│   │   ├── backend-testing.md             ← Backend testing rules
+│   │   └── commit-and-migration-workflow.md ← Git workflow rules
 │   └── skills/
 │       ├── database-design/SKILL.md
 │       ├── cli-tooling/SKILL.md
@@ -66,9 +66,9 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 ├── .cursorrules                       ← Main rules
 ├── .cursor/
 │   ├── rules/
-│   │   ├── code-style.md             ← Frontend/UI style
-│   │   ├── testing.md                ← Frontend testing rules
-│   │   └── git-conventions.md        ← Git workflow rules
+│   │   ├── ui-component-style.md          ← Frontend/UI style
+│   │   ├── frontend-testing.md            ← Frontend testing rules
+│   │   └── visual-pr-workflow.md          ← Git workflow rules
 │   ├── skills/
 │   │   ├── react-components/SKILL.md
 │   │   ├── tailwind-patterns/SKILL.md
@@ -86,9 +86,9 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 │   └── copilot-instructions.md        ← Main rules
 ├── .copilot/
 │   ├── rules/
-│   │   ├── code-style.md             ← Full-stack TS style
-│   │   ├── testing.md                ← Full-stack testing rules
-│   │   └── git-conventions.md        ← Git workflow rules
+│   │   ├── fullstack-typescript-style.md  ← Full-stack TS style
+│   │   ├── fullstack-testing.md           ← Full-stack testing rules
+│   │   └── monorepo-pr-workflow.md        ← Git workflow rules
 │   └── skills/
 │       ├── typescript-strict/SKILL.md
 │       ├── esm-modules/SKILL.md
@@ -121,9 +121,9 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 | Rule File | Claude Code | Cursor | VS Code |
 |-----------|------------|--------|---------|
 | **Main rules** | `CLAUDE.md` — Autonomous architect, CLI-first, architecture ownership, ADRs | `.cursorrules` — UI-first copilot, Tailwind, React, accessibility | `.github/copilot-instructions.md` — Full-stack assistant, shared types, typed API clients |
-| **code-style.md** | Backend: kebab-case files, async/await, pure functions, config module | Frontend: PascalCase components, Tailwind class grouping, arrow functions | Full-stack: split naming (backend kebab / frontend Pascal), workspace packages |
-| **testing.md** | Backend: unit + integration + load tests, 100% on auth/payments | Frontend: testing-library, MSW mocks, visual regression, responsive breakpoints | Full-stack: both sides + E2E spanning frontend → API → DB |
-| **git-conventions.md** | Include migration steps in PRs | Include before/after screenshots for visual changes | Describe cross-package impact for multi-package PRs |
+| **code style** | `backend-architecture-style.md` — kebab-case files, async/await, pure functions, config module | `ui-component-style.md` — PascalCase components, Tailwind class grouping, arrow functions | `fullstack-typescript-style.md` — split naming (backend kebab / frontend Pascal), workspace packages |
+| **testing** | `backend-testing.md` — unit + integration + load tests, 100% on auth/payments | `frontend-testing.md` — testing-library, MSW mocks, visual regression, responsive breakpoints | `fullstack-testing.md` — both sides + E2E spanning frontend → API → DB |
+| **git workflow** | `commit-and-migration-workflow.md` — migration steps in PRs | `visual-pr-workflow.md` — before/after screenshots for visual changes | `monorepo-pr-workflow.md` — cross-package impact for multi-package PRs |
 
 ---
 
