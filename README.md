@@ -8,30 +8,26 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 
 | Script | Purpose |
 |--------|---------|
-| `orchestrate_ai.sh` | Install everything, configure Global Brain, inject `ai-init` |
+| `orchestrate_ai.sh` | Install everything, configure global MCPs per agent, inject `ai-init` |
 | `nuke_ai.sh` | Remove everything — apps, configs, Homebrew, clean slate |
 
 ---
 
-## Global Directory (created by `orchestrate_ai.sh`)
+## Global MCP Configuration (written by `orchestrate_ai.sh`)
+
+Each agent gets its own unique global MCP, written directly to its native config path:
 
 ```
 ~/
-├── AI-Global-Settings/
-│   ├── master_mcp.json              ← mcpServers format (Claude + Cursor)
-│   ├── vscode_mcp.json              ← servers format (VS Code)
-│   └── memory/
-│       └── memory.json              ← Shared knowledge graph
-│
-├── .claude.json                     → symlink → master_mcp.json
+├── .claude.json                     ← Claude user-level global (sequential-thinking)
 ├── .cursor/
-│   └── mcp.json                     → symlink → master_mcp.json
+│   └── mcp.json                     ← Cursor global (fetch)
 │
 ├── Library/Application Support/
 │   ├── Code/User/
-│   │   └── mcp.json                 → symlink → vscode_mcp.json
+│   │   └── mcp.json                 ← VS Code global (puppeteer)
 │   └── ClaudeCode/
-│       └── managed-mcp.json         → symlink → master_mcp.json (sudo)
+│       └── managed-mcp.json         ← Claude managed global (memory) — sudo
 │
 └── .zshrc                           ← ai-init function injected here
 ```
@@ -48,15 +44,11 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 ├── .claude/
 │   ├── rules/
 │   │   ├── backend-architecture-style.md  ← Backend/architecture style
-│   │   ├── backend-testing.md             ← Backend testing rules
-│   │   └── commit-and-migration-workflow.md ← Git workflow rules
+│   │   └── backend-testing.md             ← Backend testing rules
 │   └── skills/
-│       ├── database-design/SKILL.md
-│       ├── cli-tooling/SKILL.md
 │       ├── api-design/SKILL.md
-│       ├── error-handling/SKILL.md
-│       └── git-conventions/SKILL.md
-└── .mcp.json                          ← Project MCP (mcpServers)
+│       └── error-handling/SKILL.md
+└── .mcp.json                          ← Project MCP: filesystem + github
 ```
 
 ### Option 2: Cursor
@@ -67,16 +59,11 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 ├── .cursor/
 │   ├── rules/
 │   │   ├── project-core.mdc               ← Core principles (alwaysApply: true)
-│   │   ├── ui-component-style.mdc         ← Frontend/UI style (globs: **/*.{ts,tsx})
-│   │   ├── frontend-testing.mdc           ← Frontend testing (globs: **/*.{test,spec}.{ts,tsx})
-│   │   └── git-workflow.md                ← Git/PR conventions (plain markdown)
+│   │   └── ui-component-style.mdc         ← Frontend/UI style (globs: **/*.{ts,tsx})
 │   ├── skills/
 │   │   ├── react-components/SKILL.md
-│   │   ├── tailwind-patterns/SKILL.md
-│   │   ├── accessibility/SKILL.md
-│   │   ├── state-management/SKILL.md
-│   │   └── git-conventions/SKILL.md
-│   └── mcp.json                       ← Project MCP (mcpServers, type: stdio, ${workspaceFolder})
+│   │   └── tailwind-patterns/SKILL.md
+│   └── mcp.json                       ← Project MCP: brave-search + git
 ```
 
 ### Option 3: VS Code (Copilot)
@@ -87,32 +74,25 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 │   ├── copilot-instructions.md            ← Main instructions (always-on)
 │   ├── instructions/
 │   │   ├── fullstack-typescript-style.instructions.md  ← TS style (applyTo: **/*.{ts,tsx})
-│   │   ├── fullstack-testing.instructions.md           ← Testing (applyTo: **/*.{test,spec}.{ts,tsx})
-│   │   └── monorepo-pr-workflow.instructions.md        ← Git workflow (applyTo: **)
+│   │   └── fullstack-testing.instructions.md           ← Testing (applyTo: **/*.{test,spec}.{ts,tsx})
 │   └── skills/
 │       ├── typescript-strict/SKILL.md
-│       ├── esm-modules/SKILL.md
-│       ├── full-stack-patterns/SKILL.md
-│       ├── error-handling/SKILL.md
-│       └── git-conventions/SKILL.md
+│       └── full-stack-patterns/SKILL.md
 ├── .vscode/
-│   └── mcp.json                       ← Project MCP (servers, type: stdio, ${workspaceFolder})
+│   └── mcp.json                       ← Project MCP: sqlite + postgres
 ```
 
 ---
 
 ## What Each Agent Gets
 
-### MCP Servers
+### MCP Servers (all 10 unique)
 
-| Server | Claude Code | Cursor | VS Code |
-|--------|:-----------:|:------:|:-------:|
-| **Global** (all 4 servers) | ✅ `~/.claude.json` | ✅ `~/.cursor/mcp.json` | ✅ `~/Library/.../Code/User/mcp.json` |
-| JSON root key | `mcpServers` | `mcpServers` | `servers` |
-| **Project** (3 servers) | ✅ `.mcp.json` | ✅ `.cursor/mcp.json` | ✅ `.vscode/mcp.json` |
-
-**Global servers:** `filesystem`, `fetch`, `memory`, `sequential-thinking`
-**Project servers:** `filesystem` (scoped to project dir), `fetch`, `memory`
+| Agent | Global MCP(s) | Global Path(s) | Local Project MCPs |
+|-------|---------------|-----------------|-------------------|
+| **Claude Code** | `sequential-thinking` + `memory` | `~/.claude.json` + `/Library/.../ClaudeCode/managed-mcp.json` | `filesystem` + `github` |
+| **Cursor** | `fetch` | `~/.cursor/mcp.json` | `brave-search` + `git` |
+| **VS Code** | `puppeteer` | `~/Library/.../Code/User/mcp.json` | `sqlite` + `postgres` |
 
 ---
 
@@ -121,9 +101,8 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 | Rule File | Claude Code | Cursor | VS Code |
 |-----------|------------|--------|---------|
 | **Main rules** | `CLAUDE.md` — Autonomous architect, CLI-first, architecture ownership, ADRs | `.cursorrules` (index) + `project-core.mdc` (alwaysApply) — UI-first copilot, Tailwind, React, accessibility | `.github/copilot-instructions.md` — Full-stack assistant, shared types, typed API clients |
-| **code style** | `backend-architecture-style.md` — kebab-case files, async/await, pure functions, config module | `ui-component-style.mdc` (globs: TS/TSX) — PascalCase components, Tailwind class grouping | `fullstack-typescript-style.instructions.md` (applyTo: TS/TSX) — split naming, workspace packages |
-| **testing** | `backend-testing.md` — unit + integration + load tests, 100% on auth/payments | `frontend-testing.mdc` (globs: test files) — testing-library, MSW mocks, visual regression | `fullstack-testing.instructions.md` (applyTo: test files) — both sides + E2E |
-| **git workflow** | `commit-and-migration-workflow.md` — migration steps in PRs | `git-workflow.md` — before/after screenshots for visual changes | `monorepo-pr-workflow.instructions.md` (applyTo: **) — cross-package impact |
+| **Code style** | `backend-architecture-style.md` — kebab-case files, async/await, pure functions, config module | `ui-component-style.mdc` (globs: TS/TSX) — PascalCase components, Tailwind class grouping | `fullstack-typescript-style.instructions.md` (applyTo: TS/TSX) — split naming, workspace packages |
+| **Testing** | `backend-testing.md` — unit + integration + load tests, 100% on auth/payments | *(via project-core)* | `fullstack-testing.instructions.md` (applyTo: test files) — both sides + E2E |
 
 ---
 
@@ -131,11 +110,8 @@ Two scripts to set up and tear down a complete macOS AI development environment.
 
 | # | Claude Code (Architect) | Cursor (Tactician) | VS Code (Full-Stack) |
 |---|------------------------|--------------------|--------------------|
-| 1 | **database-design** — Schema design, migrations, indexing, UUID v7, ER diagrams | **react-components** — Functional components, hooks, composition, lazy loading | **typescript-strict** — Strict config, type narrowing, generics, utility types |
-| 2 | **cli-tooling** — Arg parsing, exit codes, stdin piping, spinners, shell completion | **tailwind-patterns** — Utility-first, responsive breakpoints, dark mode, cn() | **esm-modules** — Import/export, dynamic imports, monorepo package imports, path aliases |
-| 3 | **api-design** — REST backend, Zod validation, rate limiting, OpenAPI specs | **accessibility** — WCAG 2.1 AA, semantic HTML, keyboard nav, axe-core CI | **full-stack-patterns** — Shared types, typed API client, Zod validation, e2e type safety |
-| 4 | **error-handling** — Server error classes, request-id tracing, circuit breakers, health checks | **state-management** — useState → context → Zustand, TanStack Query, optimistic updates | **error-handling** — React error boundaries + server error classes + request-id tracing |
-| 5 | **git-conventions** — Backend/infra workflow, migration steps in PRs, CHANGELOG | **git-conventions** — UI workflow, screenshots in PRs, component-scoped commits | **git-conventions** — Monorepo workflow, package-scoped scopes, per-package changelogs |
+| 1 | **api-design** — REST backend, Zod validation, rate limiting, OpenAPI specs | **react-components** — Functional components, hooks, composition, lazy loading | **typescript-strict** — Strict config, type narrowing, generics, utility types |
+| 2 | **error-handling** — Server error classes, request-id tracing, circuit breakers, health checks | **tailwind-patterns** — Utility-first, responsive breakpoints, dark mode, cn() | **full-stack-patterns** — Shared types, typed API client, Zod validation, e2e type safety |
 
 ---
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ╔══════════════════════════════════════════════════════════════════════╗
 # ║  🧹 nuke_ai.sh — Complete AI Stack Teardown                       ║
-# ║  Removes: Claude Code, Cursor, VS Code, Global Brain,             ║
+# ║  Removes: Claude Code, Cursor, VS Code,                          ║
 # ║           Node, Python, Git, Homebrew, ai-init, all configs        ║
 # ╚══════════════════════════════════════════════════════════════════════╝
 set -euo pipefail
@@ -91,8 +91,7 @@ echo -e "  ${RED}║${RESET}  ⚠️   ${BOLD}WARNING: DESTRUCTIVE OPERATION${RE
 echo -e "  ${RED}║${RESET}"
 echo -e "  ${RED}║${RESET}  This will permanently remove:"
 echo -e "  ${RED}║${RESET}    • Claude Code, Cursor, VS Code"
-echo -e "  ${RED}║${RESET}    • ~/AI-Global-Settings/ (Global Brain)"
-echo -e "  ${RED}║${RESET}    • All MCP configs and symlinks"
+echo -e "  ${RED}║${RESET}    • All global MCP configs"
 echo -e "  ${RED}║${RESET}    • ai-init function from ~/.zshrc"
 echo -e "  ${RED}║${RESET}    • Node.js, Python 3.12, Git"
 echo -e "  ${RED}║${RESET}    • Homebrew"
@@ -222,34 +221,24 @@ safe_rm "$HOME/.vscode"
 print_success "VS Code configs removed."
 
 # ═══════════════════════════════════════════════════════════════════
-#  STEP 5: REMOVE GLOBAL BRAIN
+#  STEP 5: REMOVE GLOBAL MCP CONFIGS
 # ═══════════════════════════════════════════════════════════════════
 
-print_header "🧠" "STEP 5 — Removing Global Brain"
+print_header "🔗" "STEP 5 — Removing Global MCP Configs"
 
-safe_rm "$HOME/AI-Global-Settings"
-print_success "Global Brain removed."
-
-# ═══════════════════════════════════════════════════════════════════
-#  STEP 6: REMOVE REMAINING SYMLINKS & CONFIG DIRS
-# ═══════════════════════════════════════════════════════════════════
-
-print_header "🔗" "STEP 6 — Removing Remaining Symlinks & Configs"
-
-# These may already be removed above, but safe_rm handles that
 safe_rm "$HOME/.claude.json"
 safe_rm "$HOME/.claude"
 safe_rm "$HOME/.cursor/mcp.json"
 safe_rm "$HOME/Library/Application Support/Code/User/mcp.json"
 sudo_safe_rm "/Library/Application Support/ClaudeCode/managed-mcp.json"
 sudo_safe_rm "/Library/Application Support/ClaudeCode"
-print_success "All symlinks and leftover configs removed."
+print_success "All global MCP configs removed."
 
 # ═══════════════════════════════════════════════════════════════════
-#  STEP 7: SCRUB ai-init FROM SHELL CONFIGS
+#  STEP 6: SCRUB ai-init FROM SHELL CONFIGS
 # ═══════════════════════════════════════════════════════════════════
 
-print_header "📝" "STEP 7 — Scrubbing ai-init from Shell Configs"
+print_header "📝" "STEP 6 — Scrubbing ai-init from Shell Configs"
 
 for rcfile in "$HOME/.zshrc" "$HOME/.bashrc"; do
     if [ -f "$rcfile" ]; then
@@ -274,10 +263,10 @@ for rcfile in "$HOME/.zshrc" "$HOME/.bashrc"; do
 done
 
 # ═══════════════════════════════════════════════════════════════════
-#  STEP 8: UNINSTALL FOUNDATIONS
+#  STEP 7: UNINSTALL FOUNDATIONS
 # ═══════════════════════════════════════════════════════════════════
 
-print_header "📦" "STEP 8 — Uninstalling Foundations"
+print_header "📦" "STEP 7 — Uninstalling Foundations"
 
 if command -v brew &>/dev/null; then
     for pkg in node "python@3.12" git; do
@@ -294,10 +283,10 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════
-#  STEP 9: UNINSTALL HOMEBREW
+#  STEP 8: UNINSTALL HOMEBREW
 # ═══════════════════════════════════════════════════════════════════
 
-print_header "🍺" "STEP 9 — Uninstalling Homebrew"
+print_header "🍺" "STEP 8 — Uninstalling Homebrew"
 
 if command -v brew &>/dev/null; then
     print_step "Running official Homebrew uninstaller..."
@@ -336,8 +325,7 @@ echo -e "  ${BOLD}Removed:${RESET}"
 echo -e "    ✔ Claude Code (binary + configs)"
 echo -e "    ✔ Cursor (app + configs)"
 echo -e "    ✔ Visual Studio Code (app + configs)"
-echo -e "    ✔ Global Brain (~/AI-Global-Settings/)"
-echo -e "    ✔ All MCP symlinks and config directories"
+echo -e "    ✔ All global MCP configs"
 echo -e "    ✔ ai-init function from shell configs"
 echo -e "    ✔ Node.js, Python 3.12, Git"
 echo -e "    ✔ Homebrew"

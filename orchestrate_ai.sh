@@ -3,7 +3,7 @@
 # ║  🚀 orchestrate_ai.sh — Zero-to-Hero macOS AI Stack Builder       ║
 # ║  Installs: Homebrew, Node LTS, Python 3.12+, Git,                 ║
 # ║            Claude Code, Cursor, VS Code                            ║
-# ║  Configures: Global Brain MCP, ai-init project scaffolder          ║
+# ║  Configures: Global MCPs per agent, ai-init project scaffolder     ║
 # ╚══════════════════════════════════════════════════════════════════════╝
 set -euo pipefail
 
@@ -18,10 +18,6 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # ─────────────────────────── Globals ────────────────────────────────
-readonly GLOBAL_DIR="$HOME/AI-Global-Settings"
-readonly MEMORY_DIR="$GLOBAL_DIR/memory"
-readonly MASTER_MCP="$GLOBAL_DIR/master_mcp.json"
-readonly VSCODE_MCP="$GLOBAL_DIR/vscode_mcp.json"
 ERRORS_LOG=""
 
 # ─────────────────────────── Utilities ──────────────────────────────
@@ -221,128 +217,70 @@ pause_for_auth "Both IDEs have been launched.
 Return here and press ENTER when both are authenticated."
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 2: THE GLOBAL BRAIN (MCP HIERARCHY)
+#  PHASE 2: GLOBAL MCP CONFIGURATION (per agent)
 # ═══════════════════════════════════════════════════════════════════
 
-print_header "🧠" "PHASE 2 — The Global Brain (MCP Configuration)"
+print_header "🧠" "PHASE 2 — Global MCP Configuration"
 
-# ── 2.1 Create directories ──
-print_step "Creating Global Settings directory..."
-if [ ! -d "$GLOBAL_DIR" ]; then
-    mkdir -p "$GLOBAL_DIR"
-    print_success "Created $GLOBAL_DIR"
-else
-    print_success "$GLOBAL_DIR already exists."
-fi
-
-if [ ! -d "$MEMORY_DIR" ]; then
-    mkdir -p "$MEMORY_DIR"
-    print_success "Created $MEMORY_DIR"
-else
-    print_success "$MEMORY_DIR already exists."
-fi
-
-# ── 2.2 Generate master_mcp.json (Claude + Cursor format) ──
-print_step "Generating master_mcp.json (mcpServers format)..."
-cat > "$MASTER_MCP" << 'MCPJSON'
+# ── 2.1 Claude Code user-level global (~/.claude.json) ──
+print_step "Writing Claude Code user-level global MCP..."
+cat > "$HOME/.claude.json" << 'CLAUDEGLOBAL'
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "$HOME/Desktop",
-        "$HOME/Documents",
-        "$HOME/Projects"
-      ]
-    },
-    "fetch": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
-    },
-    "memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "env": {
-        "MEMORY_FILE_PATH": "$HOME/AI-Global-Settings/memory/memory.json"
-      }
-    },
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     }
   }
 }
-MCPJSON
+CLAUDEGLOBAL
+print_success "~/.claude.json written (sequential-thinking)."
 
-# Replace $HOME with actual path
-sed -i '' "s|\$HOME|$HOME|g" "$MASTER_MCP"
-print_success "master_mcp.json generated."
+# ── 2.2 Claude Code managed global (sudo) ──
+print_step "Writing Claude Code managed MCP (sudo)..."
+sudo mkdir -p "/Library/Application Support/ClaudeCode"
+sudo tee "/Library/Application Support/ClaudeCode/managed-mcp.json" > /dev/null << 'CLAUDEMANAGED'
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  }
+}
+CLAUDEMANAGED
+print_success "/Library/Application Support/ClaudeCode/managed-mcp.json written (memory)."
 
-# ── 2.3 Generate vscode_mcp.json (VS Code format) ──
-print_step "Generating vscode_mcp.json (servers format)..."
-cat > "$VSCODE_MCP" << 'VSCODEJSON'
+# ── 2.3 Cursor global ──
+print_step "Writing Cursor global MCP..."
+mkdir -p "$HOME/.cursor"
+cat > "$HOME/.cursor/mcp.json" << 'CURSORGLOBAL'
+{
+  "mcpServers": {
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    }
+  }
+}
+CURSORGLOBAL
+print_success "~/.cursor/mcp.json written (fetch)."
+
+# ── 2.4 VS Code global ──
+print_step "Writing VS Code global MCP..."
+mkdir -p "$HOME/Library/Application Support/Code/User"
+cat > "$HOME/Library/Application Support/Code/User/mcp.json" << 'VSCODEGLOBAL'
 {
   "servers": {
-    "filesystem": {
+    "puppeteer": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "$HOME/Desktop",
-        "$HOME/Documents",
-        "$HOME/Projects"
-      ]
-    },
-    "fetch": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
-    },
-    "memory": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "env": {
-        "MEMORY_FILE_PATH": "$HOME/AI-Global-Settings/memory/memory.json"
-      }
-    },
-    "sequential-thinking": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+      "args": ["-y", "@anthropic-ai/mcp-server-puppeteer"]
     }
   }
 }
-VSCODEJSON
-
-sed -i '' "s|\$HOME|$HOME|g" "$VSCODE_MCP"
-print_success "vscode_mcp.json generated."
-
-# ── 2.4 Symlink: Claude global ──
-print_step "Linking Claude Code global config..."
-ln -sf "$MASTER_MCP" "$HOME/.claude.json"
-print_success "~/.claude.json → master_mcp.json"
-
-# ── 2.5 Symlink: Claude managed (sudo) ──
-print_step "Linking Claude Code managed config (sudo)..."
-sudo mkdir -p "/Library/Application Support/ClaudeCode"
-sudo ln -sf "$MASTER_MCP" "/Library/Application Support/ClaudeCode/managed-mcp.json"
-print_success "/Library/Application Support/ClaudeCode/managed-mcp.json → master_mcp.json"
-
-# ── 2.6 Symlink: Cursor global ──
-print_step "Linking Cursor global config..."
-mkdir -p "$HOME/.cursor"
-ln -sf "$MASTER_MCP" "$HOME/.cursor/mcp.json"
-print_success "~/.cursor/mcp.json → master_mcp.json"
-
-# ── 2.7 Symlink: VS Code user ──
-print_step "Linking VS Code user config..."
-mkdir -p "$HOME/Library/Application Support/Code/User"
-ln -sf "$VSCODE_MCP" "$HOME/Library/Application Support/Code/User/mcp.json"
-print_success "~/Library/Application Support/Code/User/mcp.json → vscode_mcp.json"
+VSCODEGLOBAL
+print_success "~/Library/Application Support/Code/User/mcp.json written (puppeteer)."
 
 # ═══════════════════════════════════════════════════════════════════
 #  PHASE 3: ai-init SHELL FUNCTION
@@ -483,40 +421,6 @@ CLAUDEEOF
         local skills_dir=".claude/skills"
         local rules_dir=".claude/rules"
 
-        _write_skill "$skills_dir" "database-design" "# Database Design
-
-## Description
-Schema design, migrations, indexing, and query optimization for relational and document databases.
-
-## Instructions
-- Design schemas normalized to 3NF by default; denormalize only with measured performance justification.
-- Every table must have a primary key, \`created_at\`, and \`updated_at\` timestamps.
-- Use UUID v7 for primary keys (time-sortable) over auto-increment integers.
-- Write reversible migrations: every \`up\` must have a corresponding \`down\`.
-- Name migrations with timestamps: \`20260101120000_create_users_table.sql\`.
-- Add indexes on columns used in WHERE, JOIN, and ORDER BY clauses.
-- Use foreign keys with appropriate ON DELETE behavior (CASCADE, SET NULL, RESTRICT).
-- Prefer \`BIGINT\` for IDs, \`TEXT\` over \`VARCHAR\` unless length constraints are required.
-- Write raw SQL for complex queries; use ORM for simple CRUD.
-- Document entity relationships in \`docs/schema.md\` with ER diagrams."
-
-        _write_skill "$skills_dir" "cli-tooling" "# CLI Tooling
-
-## Description
-Building robust command-line interfaces — argument parsing, I/O streams, exit codes, and scripting patterns.
-
-## Instructions
-- Use a proper argument parser (e.g., \`commander\`, \`yargs\`, \`argparse\`) — never hand-parse \`process.argv\`.
-- Support \`--help\` and \`--version\` flags on every CLI tool.
-- Use exit codes correctly: 0=success, 1=general error, 2=usage error.
-- Write to stdout for data output, stderr for status/progress/errors.
-- Support piping: accept stdin when no file argument is given.
-- Use spinners/progress bars for long operations (e.g., \`ora\`, \`cli-progress\`).
-- Provide \`--json\` flag for machine-readable output alongside human-readable default.
-- Gracefully handle SIGINT (Ctrl+C) — clean up temp files and connections.
-- Validate all input arguments before starting work; fail fast with clear messages.
-- Add shell completion scripts for common shells (bash, zsh, fish)."
-
         _write_skill "$skills_dir" "api-design" "# API Design (Backend)
 
 ## Description
@@ -551,23 +455,6 @@ Server-side error classes, structured logging, recovery strategies, and observab
 - Use circuit breakers for external service calls (e.g., \`opossum\`).
 - Set up health check endpoints (\`/health\`, \`/ready\`) for monitoring."
 
-        _write_skill "$skills_dir" "git-conventions" "# Git Conventions
-
-## Description
-Conventional commits, branching strategy, and PR workflow for backend/infrastructure projects.
-
-## Instructions
-- Use Conventional Commits: \`type(scope): description\` — e.g., \`feat(api): add user endpoint\`.
-- Types: \`feat\`, \`fix\`, \`docs\`, \`refactor\`, \`test\`, \`chore\`, \`perf\`, \`ci\`.
-- Keep commits atomic — one logical change per commit.
-- Write imperative mood: \"add feature\" not \"added feature\".
-- Branch naming: \`type/short-description\` — e.g., \`feat/user-auth\`, \`fix/db-connection\`.
-- Main branch is always deployable. Never push directly to main.
-- Squash-merge feature branches to keep main history clean.
-- PR descriptions must include: what changed, why, migration steps, how to test.
-- Tag releases with semver: \`v1.2.3\`. Use \`CHANGELOG.md\` generated from commits.
-- Delete branches after merge."
-
         # ── Claude-specific rules ──
         _write_rule "$rules_dir" "backend-architecture-style" "# Code Style — Backend / Architecture
 
@@ -594,16 +481,6 @@ Conventional commits, branching strategy, and PR workflow for backend/infrastruc
 - Load tests for critical endpoints before major releases.
 - Flaky tests must be fixed or quarantined within 24 hours."
 
-        _write_rule "$rules_dir" "commit-and-migration-workflow" "# Git Conventions Rules
-
-- All commits follow Conventional Commits format.
-- No direct pushes to the main branch — all changes via PR.
-- PRs require at least one approval before merge.
-- Squash-merge feature branches into main.
-- Branch names follow \`type/short-description\` pattern.
-- Include migration instructions in PR description when applicable.
-- Delete merged branches promptly."
-
         # ── Project MCP ──
         local project_dir
         project_dir="$(pwd)"
@@ -614,13 +491,12 @@ Conventional commits, branching strategy, and PR workflow for backend/infrastruc
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "$project_dir"]
     },
-    "fetch": {
+    "github": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
-    },
-    "memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<your-token-here>"
+      }
     }
   }
 }
@@ -640,16 +516,14 @@ MCPEOF
 This project uses structured Cursor rules and skills.
 
 ## Source of Truth
-- **Rules**: `.cursor/rules/` — `.mdc` files with YAML frontmatter for scoped rules; `.md` for simple rules.
+- **Rules**: `.cursor/rules/` — `.mdc` files with YAML frontmatter for scoped rules.
 - **Skills**: `.cursor/skills/` — domain-specific procedural knowledge, loaded on demand.
 
 ## Key Rules
 - `project-core.mdc` — core principles and workflow (always applied).
 - `ui-component-style.mdc` — TypeScript/React code style (applied to TS/TSX files).
-- `frontend-testing.mdc` — testing standards (applied to test files).
-- `git-workflow.md` — Git and PR conventions.
 
-See `.cursor/skills/` for deeper guidance on React, Tailwind, accessibility, state management, and Git conventions.
+See `.cursor/skills/` for deeper guidance on React and Tailwind patterns.
 CURSOREOF
 
         # ── Cursor-specific skills ──
@@ -689,57 +563,6 @@ Utility-first CSS with Tailwind — responsive design, custom configuration, and
 - Prefer \`gap\` over margins for flex/grid spacing.
 - Use Tailwind\`s built-in animations (\`animate-spin\`, \`animate-pulse\`) before custom keyframes.
 - Keep the purge config accurate to minimize CSS bundle size."
-
-        _write_skill "$skills_dir" "accessibility" "# Accessibility
-
-## Description
-WCAG 2.1 AA compliance — semantic HTML, ARIA attributes, keyboard navigation, and screen reader support.
-
-## Instructions
-- Use semantic HTML elements: \`<nav>\`, \`<main>\`, \`<article>\`, \`<button>\`, \`<a>\` — not \`<div>\` for everything.
-- Every interactive element must be keyboard-accessible (Tab, Enter, Space, Escape).
-- Every \`<img>\` must have an \`alt\` attribute. Decorative images use \`alt=\"\"\`.
-- Form inputs must have associated \`<label>\` elements (not just placeholder text).
-- Use ARIA attributes only when semantic HTML is insufficient. Prefer native elements.
-- Color contrast must meet WCAG AA: 4.5:1 for text, 3:1 for large text and UI components.
-- Manage focus: move focus to modals on open, return to trigger on close.
-- Use \`aria-live\` regions for dynamic content updates (toasts, loading states).
-- Test with screen readers (VoiceOver on macOS) and keyboard-only navigation.
-- Run automated checks with \`axe-core\` or \`eslint-plugin-jsx-a11y\` in CI."
-
-        _write_skill "$skills_dir" "state-management" "# State Management
-
-## Description
-Frontend state architecture — local state, context, external stores, and data flow patterns.
-
-## Instructions
-- Start with local state (\`useState\`). Escalate only when state is shared across distant components.
-- Use \`useReducer\` for complex local state with multiple related values.
-- React Context for low-frequency global state (theme, auth, locale) — never for high-frequency updates.
-- For server state (API data): use TanStack Query (React Query) — never manual \`useEffect\` + \`fetch\`.
-- For complex client state: use Zustand (simple) or Jotai (atomic) — avoid Redux unless already in use.
-- Never duplicate server state in client stores. Let the cache be the source of truth.
-- Derive computed values with \`useMemo\` — don'\''t store calculated state.
-- Use optimistic updates for better UX on mutations.
-- Keep state as close to where it'\''s used as possible — avoid global state hoisting.
-- Type all state shapes with TypeScript interfaces."
-
-        _write_skill "$skills_dir" "git-conventions" "# Git Conventions
-
-## Description
-Conventional commits and workflow for frontend/UI projects.
-
-## Instructions
-- Use Conventional Commits: \`type(scope): description\` — e.g., \`feat(ui): add modal component\`.
-- Types: \`feat\`, \`fix\`, \`style\`, \`refactor\`, \`test\`, \`chore\`, \`perf\`, \`docs\`.
-- Keep commits atomic — one component or feature per commit.
-- Write imperative mood: \"add button\" not \"added button\".
-- Branch naming: \`type/short-description\` — e.g., \`feat/login-modal\`, \`fix/nav-overflow\`.
-- Include before/after screenshots in PR descriptions for visual changes.
-- Main branch is always deployable. All changes via PR.
-- Squash-merge feature branches to keep main history clean.
-- Tag releases with semver. Update \`CHANGELOG.md\` from commits.
-- Delete branches after merge."
 
         # ── Project core rule (always applied) ──
         _write_rule_mdc "$rules_dir" "project-core" \
@@ -788,53 +611,20 @@ For TS/TSX file-level style detail, see \`ui-component-style.mdc\`."
 - Group Tailwind classes: layout → spacing → typography → colors → effects.
 - No unused imports, variables, or props — enforce with ESLint."
 
-        _write_rule_mdc "$rules_dir" "frontend-testing" \
-            "Testing standards for frontend component and integration tests" \
-            "**/*.{test,spec}.{ts,tsx}" "false" \
-            "# Testing Rules — Frontend
-
-- Every PR with UI changes should include component tests.
-- Test user behavior, not implementation: use \`@testing-library/react\` and query by role/text.
-- Avoid testing internal state or implementation details.
-- Snapshot tests only for stable, rarely-changed components (icons, layout shells).
-- Test keyboard navigation and screen reader interactions for interactive components.
-- Test responsive behavior at key breakpoints (mobile: 375px, tablet: 768px, desktop: 1280px).
-- Mock API calls with MSW (Mock Service Worker) — never mock fetch/axios directly.
-- Integration tests for critical user flows (signup, checkout, search).
-- Visual regression tests for design-system components.
-- CI must pass before merge. Flaky tests quarantined within 24 hours."
-
-        # ── Git workflow (plain markdown rule) ──
-        _write_rule "$rules_dir" "git-workflow" "# Git & PR Workflow
-
-- All commits follow Conventional Commits format.
-- No direct pushes to the main branch — all changes via PR.
-- PRs require at least one approval before merge.
-- PRs for visual changes must include before/after screenshots.
-- Squash-merge feature branches into main.
-- Branch names follow \`type/short-description\` pattern.
-- Delete merged branches promptly.
-
-See the git-conventions skill for full commit-type and message conventions."
-
         # ── Project MCP ──
         cat > .cursor/mcp.json << '\''MCPEOF'\''
 {
   "mcpServers": {
-    "filesystem": {
-      "type": "stdio",
+    "brave-search": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "<your-key-here>"
+      }
     },
-    "fetch": {
-      "type": "stdio",
+    "git": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
-    },
-    "memory": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
+      "args": ["-y", "@modelcontextprotocol/server-git", "--repository", "."]
     }
   }
 }
@@ -903,23 +693,6 @@ Advanced TypeScript patterns — strict configuration, type narrowing, generics,
 - Generic constraints: always add \`extends\` bounds — never unbounded generics.
 - Leverage utility types: \`Partial\`, \`Required\`, \`Pick\`, \`Omit\`, \`Record\`, \`Extract\`, \`Exclude\`."
 
-        _write_skill "$skills_dir" "esm-modules" "# ESM Modules
-
-## Description
-ECMAScript Modules — the standard JavaScript module system for full-stack TypeScript projects.
-
-## Instructions
-- Always use \`import\`/\`export\` syntax. Never use \`require()\` or \`module.exports\`.
-- Set \`\"type\": \"module\"\` in package.json for all new projects.
-- Include \`.js\` extensions in relative import paths (required by ESM even for .ts source).
-- Use dynamic \`import()\` for code splitting — frontend lazy routes and backend optional deps.
-- Prefer named exports for better refactoring and tree-shaking support.
-- In monorepos, use workspace package imports (\`@project/shared\`) over relative paths across packages.
-- Use top-level \`await\` in scripts and server entry points.
-- For dual CJS/ESM packages, use the \`\"exports\"\` field with conditional exports.
-- Configure path aliases in \`tsconfig.json\` for clean imports: \`@/components\`, \`@/utils\`.
-- Ensure bundler (Vite, esbuild) and Node.js agree on module resolution settings."
-
         _write_skill "$skills_dir" "full-stack-patterns" "# Full-Stack Patterns
 
 ## Description
@@ -936,40 +709,6 @@ Frontend-backend coordination — API contracts, shared types, monorepo structur
 - Use end-to-end type safety: DB schema → server types → API contract → client types.
 - WebSocket/SSE events typed with shared event maps.
 - Feature flags shared between frontend and backend via a common config."
-
-        _write_skill "$skills_dir" "error-handling" "# Error Handling (Full-Stack)
-
-## Description
-Error handling across the full stack — React error boundaries, server error classes, and structured logging.
-
-## Instructions
-- Frontend: wrap route-level components in React Error Boundaries with fallback UI.
-- Frontend: use \`try/catch\` in async event handlers; show user-friendly toast/alert on failure.
-- Frontend: never show raw error messages or stack traces to users.
-- Backend: create custom error classes: \`AppError\`, \`ValidationError\`, \`NotFoundError\`.
-- Backend: global error handler middleware maps error classes to HTTP status codes.
-- Both: structured logging — \`log.error(\"Action failed\", { context })\` — no string interpolation.
-- Both: add request-id tracing that flows from frontend → API → backend → logs.
-- Backend: distinguish operational errors (handle) from programmer errors (crash + alert).
-- Frontend: retry failed API calls with exponential backoff for transient errors.
-- Both: centralize error types in the shared package so frontend can switch on error codes."
-
-        _write_skill "$skills_dir" "git-conventions" "# Git Conventions
-
-## Description
-Conventional commits and workflow for full-stack TypeScript monorepo projects.
-
-## Instructions
-- Use Conventional Commits: \`type(scope): description\` — e.g., \`feat(api): add auth endpoint\`.
-- Scopes match package names: \`frontend\`, \`backend\`, \`shared\`, \`infra\`.
-- Types: \`feat\`, \`fix\`, \`docs\`, \`style\`, \`refactor\`, \`test\`, \`chore\`, \`perf\`, \`ci\`.
-- Keep commits atomic — one logical change per commit.
-- Write imperative mood: \"add feature\" not \"added feature\".
-- Branch naming: \`type/scope-description\` — e.g., \`feat/backend-auth\`, \`fix/frontend-nav\`.
-- Main branch is always deployable. All changes via PR.
-- Squash-merge feature branches into main.
-- PRs that touch both frontend and backend must describe the coordination.
-- Tag releases with semver per package in monorepo. Maintain per-package changelogs."
 
         # ── VS Code / Copilot-specific instructions ──
         _write_instruction "$instr_dir" "fullstack-typescript-style" \
@@ -1004,38 +743,23 @@ Conventional commits and workflow for full-stack TypeScript monorepo projects.
 - CI runs full test suite for all packages — PRs cannot merge with failures.
 - Flaky tests fixed or quarantined within 24 hours."
 
-        _write_instruction "$instr_dir" "monorepo-pr-workflow" \
-            "**" \
-            "Git conventions and PR workflow for monorepo projects" \
-            "# Git Conventions Rules
-
-- All commits follow Conventional Commits format with package-scoped scopes.
-- No direct pushes to the main branch — all changes via PR.
-- PRs require at least one approval before merge.
-- PRs touching multiple packages must describe cross-package impact.
-- Squash-merge feature branches into main.
-- Branch names follow \`type/scope-description\` pattern.
-- Delete merged branches promptly."
-
         # ── Project MCP (VS Code format) ──
         mkdir -p .vscode
         cat > .vscode/mcp.json << '\''MCPEOF'\''
 {
   "servers": {
-    "filesystem": {
+    "sqlite": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "./data/db.sqlite"]
     },
-    "fetch": {
+    "postgres": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
-    },
-    "memory": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "<your-connection-string-here>"
+      }
     }
   }
 }
@@ -1096,11 +820,10 @@ echo -e "    ✔ Cursor"
 echo -e "    ✔ Visual Studio Code"
 echo ""
 echo -e "  ${BOLD}Configured:${RESET}"
-echo -e "    ✔ Global Brain MCP → ~/AI-Global-Settings/"
-echo -e "    ✔ Claude Code global config → ~/.claude.json"
-echo -e "    ✔ Claude Code managed config → /Library/Application Support/ClaudeCode/"
-echo -e "    ✔ Cursor global config → ~/.cursor/mcp.json"
-echo -e "    ✔ VS Code user config → ~/Library/Application Support/Code/User/mcp.json"
+echo -e "    ✔ Claude Code global MCP → ~/.claude.json (sequential-thinking)"
+echo -e "    ✔ Claude Code managed MCP → /Library/Application Support/ClaudeCode/ (memory)"
+echo -e "    ✔ Cursor global MCP → ~/.cursor/mcp.json (fetch)"
+echo -e "    ✔ VS Code global MCP → ~/Library/.../Code/User/mcp.json (puppeteer)"
 echo -e "    ✔ ai-init function → ~/.zshrc"
 echo ""
 echo -e "  ${BOLD}Next Steps:${RESET}"
