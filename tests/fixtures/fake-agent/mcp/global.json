@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "fake-server": {
+      "command": "echo",
+      "args": ["hello"]
+    }
+  }
+}

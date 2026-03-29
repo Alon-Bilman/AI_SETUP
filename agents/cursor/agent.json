@@ -1,0 +1,25 @@
+{
+  "name": "Cursor",
+  "id": "cursor",
+  "description": "UI-first tactician — IDE copilot with Tailwind/React focus",
+  "icon": "⚡",
+  "requires": ["homebrew"],
+  "installMethod": "brew-cask",
+  "brewPackage": "cursor",
+  "appPath": "/Applications/Cursor.app",
+  "mcp": {
+    "global.json": {
+      "path": "~/.cursor/mcp.json"
+    }
+  },
+  "cleanup": {
+    "paths": [
+      "~/.cursor",
+      "~/Library/Application Support/Cursor",
+      "~/Library/Caches/Cursor",
+      "~/Library/Preferences/com.cursor.Cursor.plist",
+      "~/Library/Saved Application State/com.cursor.Cursor.savedState"
+    ],
+    "sudoPaths": []
+  }
+}

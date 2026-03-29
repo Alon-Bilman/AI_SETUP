@@ -1,0 +1,19 @@
+---
+description: >-
+  Frontend code style for TypeScript and React components
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Code Style — Frontend / UI
+
+- Use `PascalCase` for components and types, `camelCase` for variables/hooks, `UPPER_SNAKE` for constants.
+- One component per file. Filename matches component name: `UserCard.tsx`.
+- Order imports: React → external packages → internal components → hooks → utils → types → styles.
+- Separate import groups with blank lines.
+- Maximum line length: 100 characters. Break JSX props onto separate lines when >3 props.
+- Use TypeScript strict mode. Define prop interfaces above each component.
+- Prefer `const` + arrow functions for components: `const Button: React.FC<Props> = () => {}`.
+- Use Tailwind utility classes. Avoid inline `style={{}}` unless dynamic values are required.
+- Group Tailwind classes: layout → spacing → typography → colors → effects.
+- No unused imports, variables, or props — enforce with ESLint.

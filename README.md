@@ -1,132 +1,224 @@
-# 🚀 AI Stack Orchestrator
+# 🚀 AI Stack Orchestrator v2
 
-Two scripts to set up and tear down a complete macOS AI development environment.
+Config-driven macOS AI development environment — extensible, reliable, and maintainable.
 
----
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `orchestrate_ai.sh` | Install everything, configure global MCPs per agent, inject `ai-init` |
-| `nuke_ai.sh` | Remove everything — apps, configs, Homebrew, clean slate |
+**Add a new agent = add a folder. No code changes.**
 
 ---
 
-## Global MCP Configuration (written by `orchestrate_ai.sh`)
-
-Each agent gets its own unique global MCP, written directly to its native config path:
+## Architecture
 
 ```
-~/
-├── .claude.json                     ← Claude user-level global (sequential-thinking)
-├── .cursor/
-│   └── mcp.json                     ← Cursor global (fetch)
+AI_SETUP/
+├── setup.sh                  # Bash bootstrap → installs brew+node, runs orchestrator
+├── nuke.sh                   # Bash bootstrap → runs teardown
+├── package.json / tsconfig.json
 │
-├── Library/Application Support/
-│   ├── Code/User/
-│   │   └── mcp.json                 ← VS Code global (puppeteer)
-│   └── ClaudeCode/
-│       └── managed-mcp.json         ← Claude managed global (memory) — sudo
+├── src/
+│   ├── orchestrate.ts        # Main entry: foundations → select agents → install → MCP → auth
+│   ├── nuke.ts               # Teardown: select agents → uninstall → cleanup → remove foundations
+│   ├── ai-init.ts            # Project scaffolder: select agent → copy scaffold + plugins
+│   ├── core/
+│   │   ├── types.ts          # AgentConfig, AgentDriver, PluginConfig, Context interfaces
+│   │   ├── registry.ts       # Auto-discovers agents/ and plugins/ folders
+│   │   ├── config.ts         # Reads + validates agent.json
+│   │   └── runner.ts         # Builds Context objects for drivers
+│   ├── lib/
+│   │   ├── ui.ts             # Terminal output (chalk colors, headers, steps)
+│   │   ├── shell.ts          # exec, retry, safeRm, sudoRm
+│   │   ├── prompts.ts        # Interactive menus (inquirer)
+│   │   ├── mcp.ts            # Write MCP configs to disk
+│   │   └── template.ts       # Deep-copy scaffold dirs with {{VAR}} replacement
+│   └── foundations/
+│       ├── index.ts           # Install/uninstall in order: brew → node → python → git
+│       ├── homebrew.ts
+│       ├── node.ts
+│       ├── python.ts
+│       └── git.ts
 │
-└── .zshrc                           ← ai-init function injected here
+├── agents/                    # One folder per agent (data, not code)
+│   ├── claude/
+│   │   ├── agent.json         # Config: name, MCP paths, cleanup paths
+│   │   ├── driver.ts          # 4 functions: isInstalled, install, authenticate, uninstall
+│   │   ├── mcp/               # Global MCP JSON files
+│   │   └── scaffold/          # Files copied into new projects by ai-init
+│   ├── cursor/
+│   ├── vscode/
+│   └── _template/             # Copy this to add a new agent
+│
+└── plugins/                   # Optional cross-agent project add-ons
+    └── _template/
 ```
-
----
-
-## Project Scaffolds (`ai-init`)
-
-### Option 1: Claude Code
-
-```
-<project>/
-├── CLAUDE.md                          ← Main rules
-├── .claude/
-│   ├── rules/
-│   │   ├── backend-architecture-style.md  ← Backend/architecture style
-│   │   └── backend-testing.md             ← Backend testing rules
-│   └── skills/
-│       ├── api-design/SKILL.md
-│       └── error-handling/SKILL.md
-└── .mcp.json                          ← Project MCP: filesystem + github
-```
-
-### Option 2: Cursor
-
-```
-<project>/
-├── .cursorrules                       ← Short index (points to rules/ + skills/)
-├── .cursor/
-│   ├── rules/
-│   │   ├── project-core.mdc               ← Core principles (alwaysApply: true)
-│   │   └── ui-component-style.mdc         ← Frontend/UI style (globs: **/*.{ts,tsx})
-│   ├── skills/
-│   │   ├── react-components/SKILL.md
-│   │   └── tailwind-patterns/SKILL.md
-│   └── mcp.json                       ← Project MCP: brave-search + git
-```
-
-### Option 3: VS Code (Copilot)
-
-```
-<project>/
-├── .github/
-│   ├── copilot-instructions.md            ← Main instructions (always-on)
-│   ├── instructions/
-│   │   ├── fullstack-typescript-style.instructions.md  ← TS style (applyTo: **/*.{ts,tsx})
-│   │   └── fullstack-testing.instructions.md           ← Testing (applyTo: **/*.{test,spec}.{ts,tsx})
-│   └── skills/
-│       ├── typescript-strict/SKILL.md
-│       └── full-stack-patterns/SKILL.md
-├── .vscode/
-│   └── mcp.json                       ← Project MCP: sqlite + postgres
-```
-
----
-
-## What Each Agent Gets
-
-### MCP Servers (all 10 unique)
-
-| Agent | Global MCP(s) | Global Path(s) | Local Project MCPs |
-|-------|---------------|-----------------|-------------------|
-| **Claude Code** | `sequential-thinking` + `memory` | `~/.claude.json` + `/Library/.../ClaudeCode/managed-mcp.json` | `filesystem` + `github` |
-| **Cursor** | `fetch` | `~/.cursor/mcp.json` | `brave-search` + `git` |
-| **VS Code** | `puppeteer` | `~/Library/.../Code/User/mcp.json` | `sqlite` + `postgres` |
-
----
-
-### Rules (per project)
-
-| Rule File | Claude Code | Cursor | VS Code |
-|-----------|------------|--------|---------|
-| **Main rules** | `CLAUDE.md` — Autonomous architect, CLI-first, architecture ownership, ADRs | `.cursorrules` (index) + `project-core.mdc` (alwaysApply) — UI-first copilot, Tailwind, React, accessibility | `.github/copilot-instructions.md` — Full-stack assistant, shared types, typed API clients |
-| **Code style** | `backend-architecture-style.md` — kebab-case files, async/await, pure functions, config module | `ui-component-style.mdc` (globs: TS/TSX) — PascalCase components, Tailwind class grouping | `fullstack-typescript-style.instructions.md` (applyTo: TS/TSX) — split naming, workspace packages |
-| **Testing** | `backend-testing.md` — unit + integration + load tests, 100% on auth/payments | *(via project-core)* | `fullstack-testing.instructions.md` (applyTo: test files) — both sides + E2E |
-
----
-
-### Skills (per project)
-
-| # | Claude Code (Architect) | Cursor (Tactician) | VS Code (Full-Stack) |
-|---|------------------------|--------------------|--------------------|
-| 1 | **api-design** — REST backend, Zod validation, rate limiting, OpenAPI specs | **react-components** — Functional components, hooks, composition, lazy loading | **typescript-strict** — Strict config, type narrowing, generics, utility types |
-| 2 | **error-handling** — Server error classes, request-id tracing, circuit breakers, health checks | **tailwind-patterns** — Utility-first, responsive breakpoints, dark mode, cn() | **full-stack-patterns** — Shared types, typed API client, Zod validation, e2e type safety |
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Run the installer
-chmod +x orchestrate_ai.sh && bash orchestrate_ai.sh
+# Setup everything
+chmod +x setup.sh && ./setup.sh
 
-# 2. Reload shell
-source ~/.zshrc
-
-# 3. Scaffold a project
+# Scaffold a new project
 ai-init
 
-# To remove everything:
-chmod +x nuke_ai.sh && bash nuke_ai.sh
+# Teardown everything
+chmod +x nuke.sh && ./nuke.sh
+
+# Dry run (see what would happen without doing it)
+./setup.sh --dry-run
+./nuke.sh --dry-run
 ```
+
+---
+
+## Built-in Agents
+
+| Agent | Icon | Global MCPs | Project Scaffold |
+|-------|------|-------------|-----------------|
+| Claude Code | 🤖 | sequential-thinking, memory | CLAUDE.md, rules, skills, .mcp.json |
+| Cursor | ⚡ | fetch | .cursorrules, .mdc rules, skills, .cursor/mcp.json |
+| VS Code | 💎 | puppeteer | copilot-instructions.md, .instructions.md, skills, .vscode/mcp.json |
+
+---
+
+## Adding a New Agent
+
+```bash
+# 1. Copy the template
+cp -r agents/_template agents/opencode
+
+# 2. Edit the config
+#    agents/opencode/agent.json — name, MCP paths, cleanup paths
+#    agents/opencode/driver.ts  — isInstalled, install, authenticate, uninstall
+
+# 3. Add MCP configs
+#    agents/opencode/mcp/global.json
+
+# 4. Add scaffold files
+#    agents/opencode/scaffold/  — rules, skills, project MCP, etc.
+
+# 5. Done. Run ./setup.sh — OpenCode appears in the menu automatically.
+```
+
+### agent.json Reference
+
+```jsonc
+{
+  "name": "OpenCode",              // Display name
+  "id": "opencode",               // Must match folder name
+  "description": "Terminal AI",    // Shown in menus
+  "icon": "🖥️",                   // Menu icon
+  "requires": ["homebrew", "node"],
+  "installMethod": "custom",      // "custom" | "brew-cask" | "brew" | "npm-global"
+  "command": "opencode",           // CLI command to check installation
+  "mcp": {
+    "global.json": {               // File under mcp/ → destination path
+      "path": "~/.opencode/mcp.json"
+    }
+  },
+  "cleanup": {
+    "paths": ["~/.opencode"],      // Removed by nuke (user-level)
+    "sudoPaths": []                // Removed by nuke (with sudo)
+  }
+}
+```
+
+### driver.ts Reference
+
+```typescript
+import type { AgentDriver, Context } from "../../src/core/types.js";
+
+export const driver: AgentDriver = {
+  async isInstalled() { /* return true if installed */ },
+  async install(ctx)  { /* install the agent */ },
+  async authenticate(ctx) { /* prompt user to log in */ },
+  async uninstall(ctx) { /* remove the agent */ },
+};
+export default driver;
+```
+
+---
+
+## Adding a Plugin
+
+Plugins are optional add-ons that inject files into projects during `ai-init`.
+
+```bash
+# 1. Copy the template
+cp -r plugins/_template plugins/git-hooks
+
+# 2. Edit plugins/git-hooks/plugin.json
+{
+  "name": "Git Hooks",
+  "id": "git-hooks",
+  "description": "Husky + commitlint pre-commit hooks",
+  "icon": "🪝",
+  "compatibleAgents": []    // empty = compatible with all agents
+}
+
+# 3. Add files under plugins/git-hooks/files/
+#    These are copied to the project root preserving directory structure.
+#    Supports {{PROJECT_DIR}} and {{PROJECT_NAME}} tokens.
+
+# 4. Done. Plugin appears in ai-init menu automatically.
+```
+
+---
+
+## How It Works
+
+### Setup Flow (`./setup.sh`)
+1. Bash bootstrap ensures Homebrew + Node exist
+2. `orchestrate.ts` installs foundations (brew, node, python, git)
+3. Auto-discovers `agents/*/agent.json`
+4. Interactive checkbox: pick which agents to set up
+5. For each agent: install → write global MCP → authenticate
+6. Injects `ai-init` shell function into `~/.zshrc`
+
+### Teardown Flow (`./nuke.sh`)
+1. Safety gate (type NUKE to confirm)
+2. Auto-discovers all agents
+3. For each: run `driver.uninstall()` → remove cleanup paths → remove MCP configs
+4. Removes `ai-init` from shell configs
+5. Uninstalls foundations in reverse order
+
+### Scaffold Flow (`ai-init`)
+1. Prompt for project name
+2. Select one agent from discovered list
+3. Optionally select plugins
+4. Deep-copy `agents/<id>/scaffold/` into new project
+5. Replace `{{PROJECT_DIR}}` and `{{PROJECT_NAME}}` tokens in copied files
+6. Copy plugin files into project
+
+---
+
+## Design Principles
+
+| Principle | Implementation |
+|-----------|---------------|
+| **Convention over configuration** | Agents discovered by folder existence — no central registry |
+| **Data, not code** | MCP configs, rules, skills are plain files — edit with any editor |
+| **Typed driver contract** | `AgentDriver` interface enforces consistent 4-function API |
+| **Idempotent** | Every step checks before acting (already installed → skip) |
+| **Dry run** | `--dry-run` flag prints actions without executing |
+| **Isolated agents** | One agent's broken config can't affect another |
+| **Template tokens** | `{{PROJECT_DIR}}` replaced at scaffold time for dynamic values |
+
+---
+
+## What Each Agent Gets
+
+### MCP Servers
+
+| Agent | Global MCP(s) | Project MCPs |
+|-------|---------------|-------------|
+| **Claude Code** | sequential-thinking + memory | filesystem + github |
+| **Cursor** | fetch | brave-search + git |
+| **VS Code** | puppeteer | sqlite + postgres |
+
+### Skills (per project)
+
+| # | Claude Code | Cursor | VS Code |
+|---|------------|--------|---------|
+| 1 | **api-design** — REST, Zod, rate limiting, OpenAPI | **react-components** — Functional, hooks, lazy loading | **typescript-strict** — Strict config, generics, utility types |
+| 2 | **error-handling** — Error classes, tracing, circuit breakers | **tailwind-patterns** — Utility-first, responsive, dark mode | **full-stack-patterns** — Shared types, typed API, e2e safety |

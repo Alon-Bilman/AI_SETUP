@@ -1,0 +1,18 @@
+{
+  "name": "Fake Agent",
+  "id": "fake-agent",
+  "description": "A test-only agent for integration tests",
+  "icon": "🧪",
+  "requires": ["homebrew", "node"],
+  "installMethod": "custom",
+  "command": "fake-agent",
+  "mcp": {
+    "global.json": {
+      "path": "~/.fake-agent/mcp.json"
+    }
+  },
+  "cleanup": {
+    "paths": ["~/.fake-agent"],
+    "sudoPaths": []
+  }
+}

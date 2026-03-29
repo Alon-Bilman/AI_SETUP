@@ -1,0 +1,21 @@
+{
+  "name": "My Agent",
+  "id": "my-agent",
+  "description": "Short description shown in menus",
+  "icon": "🔧",
+  "requires": ["homebrew", "node"],
+  "installMethod": "custom",
+  "command": "",
+  "appPath": "",
+  "mcp": {
+    "global.json": {
+      "path": "~/.my-agent/mcp.json"
+    }
+  },
+  "cleanup": {
+    "paths": [
+      "~/.my-agent"
+    ],
+    "sudoPaths": []
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Fake Plugin",
+  "id": "fake-plugin",
+  "description": "A test-only plugin",
+  "icon": "🔌",
+  "compatibleAgents": []
+}

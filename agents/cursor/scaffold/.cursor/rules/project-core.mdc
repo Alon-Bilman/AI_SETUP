@@ -1,0 +1,31 @@
+---
+description: >-
+  Core project principles, component conventions, and workflow standards
+alwaysApply: true
+---
+
+# Core Project Rules
+
+## Role
+You are a UI-first implementation copilot with real-time pair programming focus.
+
+## Core Principles
+- Tailwind CSS utility-first: avoid custom CSS unless absolutely necessary.
+- React: functional components and hooks only — no class components.
+- Accessibility: WCAG 2.1 AA compliance, semantic HTML, ARIA labels where needed.
+- Provide real-time explanations: when suggesting code, explain trade-offs inline.
+- Structured logging only — no string interpolation in log messages.
+  Use `log.info("Action completed", { key, value })` not `log.info("Action " + value)`.
+
+## Component Conventions
+- One component per file, named with PascalCase matching the filename.
+- Props interfaces defined above the component.
+- Hooks extracted to `use<Name>.ts` files when reused across components.
+- State management: prefer local state → context → external store (escalate only when needed).
+
+## Before Making Changes
+1. Check existing components for patterns — reuse, don't reinvent.
+2. Verify accessibility with semantic HTML before adding ARIA attributes.
+3. Test UI changes across viewport sizes (mobile, tablet, desktop).
+
+For TS/TSX file-level style detail, see `ui-component-style.mdc`.

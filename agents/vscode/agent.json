@@ -1,0 +1,25 @@
+{
+  "name": "VS Code",
+  "id": "vscode",
+  "description": "Copilot-powered full-stack assistant with GitHub integration",
+  "icon": "💎",
+  "requires": ["homebrew"],
+  "installMethod": "brew-cask",
+  "brewPackage": "visual-studio-code",
+  "appPath": "/Applications/Visual Studio Code.app",
+  "mcp": {
+    "global.json": {
+      "path": "~/Library/Application Support/Code/User/mcp.json"
+    }
+  },
+  "cleanup": {
+    "paths": [
+      "~/Library/Application Support/Code",
+      "~/Library/Caches/com.microsoft.VSCode",
+      "~/Library/Preferences/com.microsoft.VSCode.plist",
+      "~/Library/Saved Application State/com.microsoft.VSCode.savedState",
+      "~/.vscode"
+    ],
+    "sudoPaths": []
+  }
+}

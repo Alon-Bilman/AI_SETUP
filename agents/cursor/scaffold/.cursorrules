@@ -1,0 +1,13 @@
+# Project Rules — Cursor
+
+This project uses structured Cursor rules and skills.
+
+## Source of Truth
+- **Rules**: `.cursor/rules/` — `.mdc` files with YAML frontmatter for scoped rules.
+- **Skills**: `.cursor/skills/` — domain-specific procedural knowledge, loaded on demand.
+
+## Key Rules
+- `project-core.mdc` — core principles and workflow (always applied).
+- `ui-component-style.mdc` — TypeScript/React code style (applied to TS/TSX files).
+
+See `.cursor/skills/` for deeper guidance on React and Tailwind patterns.

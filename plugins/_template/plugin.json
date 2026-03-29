@@ -1,0 +1,7 @@
+{
+  "name": "My Plugin",
+  "id": "my-plugin",
+  "description": "Short description of what this plugin adds to projects",
+  "icon": "🔌",
+  "compatibleAgents": []
+}

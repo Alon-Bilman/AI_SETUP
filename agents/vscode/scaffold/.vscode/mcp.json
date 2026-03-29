@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "sqlite": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "./data/db.sqlite"]
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "<your-connection-string-here>"
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "Claude Code",
+  "id": "claude",
+  "description": "Autonomous CLI-first AI architect",
+  "icon": "🤖",
+  "requires": ["homebrew", "node"],
+  "installMethod": "custom",
+  "command": "claude",
+  "mcp": {
+    "global.json": {
+      "path": "~/.claude.json"
+    },
+    "managed.json": {
+      "path": "/Library/Application Support/ClaudeCode/managed-mcp.json",
+      "sudo": true
+    }
+  },
+  "cleanup": {
+    "paths": [
+      "~/.claude.json",
+      "~/.claude",
+      "~/.local/bin/claude"
+    ],
+    "sudoPaths": [
+      "/Library/Application Support/ClaudeCode"
+    ]
+  }
+}
