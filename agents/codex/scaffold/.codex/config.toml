@@ -1,0 +1,15 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# ─── Project-level Codex configuration ────────────────────────────────────
+# This file is loaded when Codex trusts this project.
+# User-level config (~/.codex/config.toml) is applied first; these override.
+
+file_opener = "vscode"
+
+[mcp_servers.git]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-git", "--repository", "."]
+
+[mcp_servers.filesystem]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "./src", "./tests", "./docs"]

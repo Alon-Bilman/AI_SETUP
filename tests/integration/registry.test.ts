@@ -7,6 +7,7 @@ describe("discoverAgents", () => {
     const ids = agents.map((a) => a.config.id);
 
     expect(ids).toContain("claude");
+    expect(ids).toContain("codex");
     expect(ids).toContain("cursor");
     expect(ids).toContain("vscode");
   });

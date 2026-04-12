@@ -80,6 +80,8 @@ export interface FsHelpers {
   copyScaffold(srcDir: string, destDir: string, vars?: Record<string, string>): Promise<void>;
   readJson<T = unknown>(filePath: string): Promise<T>;
   writeJson(filePath: string, data: unknown, options?: { sudo?: boolean }): Promise<void>;
+  readToml<T = Record<string, unknown>>(filePath: string): Promise<T>;
+  writeToml(filePath: string, data: Record<string, unknown>, options?: { sudo?: boolean }): Promise<void>;
   exists(filePath: string): Promise<boolean>;
 }
 

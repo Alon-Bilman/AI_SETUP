@@ -167,3 +167,81 @@ describe("exists", () => {
     expect(await fs.exists(join(tmpDir, "nope.txt"))).toBe(false);
   });
 });
+
+describe("readToml / writeToml", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "ai-setup-toml-"));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("writeToml creates a TOML file and readToml reads it back", async () => {
+    const fs = createFs(false);
+    const filePath = join(tmpDir, "test.toml");
+    const data = { key: "value", nested: { arr: [1, 2, 3] } };
+
+    await fs.writeToml(filePath, data);
+    const result = await fs.readToml(filePath);
+
+    expect(result).toEqual(data);
+  });
+
+  it("writeToml creates intermediate directories", async () => {
+    const fs = createFs(false);
+    const filePath = join(tmpDir, "a", "b", "deep.toml");
+    await fs.writeToml(filePath, { deep: true });
+
+    const result = await fs.readToml<{ deep: boolean }>(filePath);
+    expect(result.deep).toBe(true);
+  });
+
+  it("writeToml is a no-op in dry-run mode", async () => {
+    const fs = createFs(true);
+    const filePath = join(tmpDir, "nope.toml");
+    await fs.writeToml(filePath, { data: true });
+
+    const { existsSync } = await import("fs");
+    expect(existsSync(filePath)).toBe(false);
+  });
+
+  it("round-trips MCP server config as valid TOML", async () => {
+    const fs = createFs(false);
+    const filePath = join(tmpDir, "config.toml");
+    const data = {
+      mcp_servers: {
+        context7: {
+          command: "npx",
+          args: ["-y", "@upstash/context7-mcp"],
+        },
+      },
+    };
+
+    await fs.writeToml(filePath, data);
+    const result = await fs.readToml<typeof data>(filePath);
+
+    expect(result.mcp_servers.context7.command).toBe("npx");
+    expect(result.mcp_servers.context7.args).toEqual(["-y", "@upstash/context7-mcp"]);
+  });
+
+  it("preserves string content when reading raw TOML", async () => {
+    const tomlContent = [
+      'model = "gpt-5.4"',
+      "",
+      "[mcp_servers.test]",
+      'command = "echo"',
+      'args = ["hello"]',
+      "",
+    ].join("\n");
+    await writeFile(join(tmpDir, "raw.toml"), tomlContent);
+
+    const fs = createFs(false);
+    const result = await fs.readToml<Record<string, unknown>>(join(tmpDir, "raw.toml"));
+
+    expect(result.model).toBe("gpt-5.4");
+    expect(result.mcp_servers).toBeDefined();
+  });
+});

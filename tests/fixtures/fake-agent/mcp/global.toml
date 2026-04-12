@@ -1,0 +1,3 @@
+[mcp_servers.fake-toml-server]
+command = "echo"
+args = ["hello-toml"]

@@ -1,0 +1,60 @@
+# ─── Default command rules ─────────────────────────────────────────────────
+# Starlark-based rules for controlling which commands Codex can run outside
+# the sandbox. See: https://developers.openai.com/codex/rules
+
+# Allow common read-only git commands without prompting
+prefix_rule(
+    pattern = ["git", ["status", "log", "diff", "show", "branch"]],
+    decision = "allow",
+    justification = "Read-only git operations are always safe.",
+    match = [
+        "git status",
+        "git log --oneline -10",
+        "git diff HEAD~1",
+        "git branch -a",
+    ],
+    not_match = [
+        "git push --force",
+        "git reset --hard",
+    ],
+)
+
+# Allow common test and lint commands
+prefix_rule(
+    pattern = [["npm", "npx", "pnpm"], ["test", "run"]],
+    decision = "allow",
+    justification = "Running tests and scripts is safe inside the project.",
+    match = [
+        "npm test",
+        "npm run lint",
+        "npx vitest run",
+        "pnpm test",
+    ],
+)
+
+# Prompt before any destructive git operations
+prefix_rule(
+    pattern = ["git", ["push", "reset", "rebase", "force-push"]],
+    decision = "prompt",
+    justification = "Destructive git operations need human review.",
+    match = [
+        "git push --force",
+        "git reset --hard HEAD~1",
+        "git rebase -i main",
+    ],
+)
+
+# Forbid rm -rf on root-level paths
+prefix_rule(
+    pattern = ["rm", "-rf", "/"],
+    decision = "forbidden",
+    justification = "Never allow recursive deletion of root paths. Use targeted cleanup instead.",
+    match = [
+        "rm -rf /",
+        "rm -rf /usr",
+    ],
+    not_match = [
+        "rm -rf ./dist",
+        "rm -rf node_modules",
+    ],
+)

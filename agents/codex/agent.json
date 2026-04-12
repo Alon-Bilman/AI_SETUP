@@ -1,0 +1,22 @@
+{
+  "name": "Codex",
+  "id": "codex",
+  "description": "OpenAI's autonomous CLI coding agent with multi-agent orchestration",
+  "icon": "🧬",
+  "requires": ["homebrew", "node"],
+  "installMethod": "custom",
+  "command": "codex",
+  "mcp": {
+    "global.toml": {
+      "path": "~/.codex/config.toml"
+    }
+  },
+  "cleanup": {
+    "paths": [
+      "~/.codex"
+    ],
+    "sudoPaths": [
+      "/etc/codex"
+    ]
+  }
+}
