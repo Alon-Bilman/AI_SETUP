@@ -42,6 +42,11 @@ AI_SETUP/
 │   │   ├── driver.ts          # 4 functions: isInstalled, install, authenticate, uninstall
 │   │   ├── mcp/               # Global MCP JSON files
 │   │   └── scaffold/          # Files copied into new projects by ai-init
+│   ├── codex/
+│   │   ├── agent.json         # Config: name, MCP paths (TOML), cleanup paths
+│   │   ├── driver.ts          # npm install, ChatGPT auth, npm uninstall
+│   │   ├── mcp/               # Global MCP TOML (merged into ~/.codex/config.toml)
+│   │   └── scaffold/          # AGENTS.md, .codex/, .agents/skills/
 │   ├── cursor/
 │   ├── vscode/
 │   └── _template/             # Copy this to add a new agent
@@ -75,8 +80,7 @@ chmod +x nuke.sh && ./nuke.sh
 
 | Agent | Icon | Global MCPs | Project Scaffold |
 |-------|------|-------------|-----------------|
-| Claude Code | 🤖 | sequential-thinking, memory | CLAUDE.md, rules, skills, .mcp.json |
-| Cursor | ⚡ | fetch | .cursorrules, .mdc rules, skills, .cursor/mcp.json |
+| Claude Code | 🤖 | sequential-thinking, memory | CLAUDE.md, rules, skills, .mcp.json || Codex | 🧬 | context7, sequential-thinking, memory | AGENTS.md, .codex/ (config, agents, rules, skills), .agents/skills/ || Cursor | ⚡ | fetch | .cursorrules, .mdc rules, skills, .cursor/mcp.json |
 | VS Code | 💎 | puppeteer | copilot-instructions.md, .instructions.md, skills, .vscode/mcp.json |
 
 ---
@@ -135,6 +139,102 @@ export const driver: AgentDriver = {
   async uninstall(ctx) { /* remove the agent */ },
 };
 export default driver;
+```
+
+---
+
+## Codex Agent — Deep Dive
+
+Codex is unique among the agents because it uses **TOML configuration** (not JSON) and has a richer per-project structure: subagents, command rules, skills, and shared `.agents/` skills.
+
+### Global Setup (`./setup.sh` → select Codex)
+
+Installs the CLI via `npm install -g @openai/codex`, then **merges** MCP servers into `~/.codex/config.toml` (preserving your existing model, sandbox, and approval settings):
+
+```toml
+# Your existing settings stay untouched
+# model = "gpt-5.4"
+# approval_policy = "on-request"
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+
+[mcp_servers.sequential-thinking]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+[mcp_servers.memory]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-memory"]
+```
+
+### Project Scaffold (`ai-init` → select Codex → "myapp")
+
+```
+myapp/
+├── AGENTS.md                              # Project instructions for Codex
+├── .agents/
+│   └── skills/                            # Shared skills (usable by any subagent)
+│       ├── code-review/
+│       │   └── SKILL.md                   # Structured review workflow
+│       └── testing-strategy/
+│           └── SKILL.md                   # Unit/integration/E2E patterns
+└── .codex/
+    ├── config.toml                        # Project-level MCP servers + settings
+    ├── agents/
+    │   ├── explorer.toml                  # Read-only codebase exploration (skills disabled)
+    │   └── reviewer.toml                  # PR review (code-review + testing-strategy enabled)
+    ├── rules/
+    │   └── default.rules                  # Starlark command policies
+    └── skills/
+        └── project-conventions/
+            └── SKILL.md                   # Coding standards, git workflow, docs
+```
+
+### TOML Support
+
+The framework detects config format from file extension:
+
+| Source file | Read as | Destination file | Write as |
+|-------------|---------|-----------------|----------|
+| `mcp/global.json` | JSON | `~/.cursor/mcp.json` | JSON (overwrite) |
+| `mcp/global.toml` | TOML | `~/.codex/config.toml` | TOML (merge) |
+
+TOML destinations are **merged** (not overwritten) — your existing `config.toml` settings are preserved. JSON destinations use the existing overwrite behavior.
+
+### Subagents
+
+Each `.toml` file in `.codex/agents/` defines a subagent with its own model, sandbox, and skill configuration:
+
+```toml
+# .codex/agents/reviewer.toml
+name = "reviewer"
+description = "PR reviewer focused on correctness, security, and missing tests."
+sandbox_mode = "read-only"
+model_reasoning_effort = "high"
+
+[[skills.config]]
+path = ".agents/skills/code-review/SKILL.md"
+enabled = true
+```
+
+Subagents toggle shared skills independently — the explorer disables review skills, the reviewer enables them.
+
+### Command Rules
+
+`.codex/rules/default.rules` uses Starlark syntax:
+
+```python
+prefix_rule(
+    pattern = ["git", ["status", "log", "diff"]],
+    decision = "allow",
+)
+prefix_rule(
+    pattern = ["git", ["push", "reset", "rebase"]],
+    decision = "prompt",
+    justification = "Destructive git operations need human review.",
+)
 ```
 
 ---
@@ -213,12 +313,14 @@ cp -r plugins/_template plugins/git-hooks
 | Agent | Global MCP(s) | Project MCPs |
 |-------|---------------|-------------|
 | **Claude Code** | sequential-thinking + memory | filesystem + github |
+| **Codex** | context7 + sequential-thinking + memory | git + filesystem |
 | **Cursor** | fetch | brave-search + git |
 | **VS Code** | puppeteer | sqlite + postgres |
 
 ### Skills (per project)
 
-| # | Claude Code | Cursor | VS Code |
-|---|------------|--------|---------|
-| 1 | **api-design** — REST, Zod, rate limiting, OpenAPI | **react-components** — Functional, hooks, lazy loading | **typescript-strict** — Strict config, generics, utility types |
-| 2 | **error-handling** — Error classes, tracing, circuit breakers | **tailwind-patterns** — Utility-first, responsive, dark mode | **full-stack-patterns** — Shared types, typed API, e2e safety |
+| # | Claude Code | Codex | Cursor | VS Code |
+|---|------------|-------|--------|--------|
+| 1 | **api-design** — REST, Zod, rate limiting, OpenAPI | **code-review** — Structured review, security, correctness | **react-components** — Functional, hooks, lazy loading | **typescript-strict** — Strict config, generics, utility types |
+| 2 | **error-handling** — Error classes, tracing, circuit breakers | **testing-strategy** — Unit, integration, E2E patterns | **tailwind-patterns** — Utility-first, responsive, dark mode | **full-stack-patterns** — Shared types, typed API, e2e safety |
+| 3 | | **project-conventions** — Code org, git workflow, docs | | |

@@ -9,3 +9,11 @@ unless the parent agent asks for them.
 Prefer fast search and targeted file reads over broad scans.
 Summarize findings with file paths and line numbers for the parent agent.
 """
+
+[[skills.config]]
+path = ".agents/skills/code-review/SKILL.md"
+enabled = false
+
+[[skills.config]]
+path = ".agents/skills/testing-strategy/SKILL.md"
+enabled = false

@@ -9,3 +9,11 @@ Lead with concrete findings, include reproduction steps when possible, and avoid
 style-only comments unless they hide a real bug.
 Rate each finding as critical, warning, or nit.
 """
+
+[[skills.config]]
+path = ".agents/skills/code-review/SKILL.md"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/testing-strategy/SKILL.md"
+enabled = true
